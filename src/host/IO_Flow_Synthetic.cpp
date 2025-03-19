@@ -111,6 +111,7 @@ IO_Flow_Synthetic::IO_Flow_Synthetic(const sim_object_id_type &name, uint16_t fl
 			case Utils::Address_Distribution_Type::STREAMING:
 				request->Start_LBA = streaming_next_address;
 				if (request->Start_LBA + request->LBA_count > end_lsa_on_device) {
+					// 循环从头再来
 					request->Start_LBA = start_lsa_on_device;
 				}
 				streaming_next_address += request->LBA_count;
@@ -222,9 +223,12 @@ IO_Flow_Synthetic::IO_Flow_Synthetic(const sim_object_id_type &name, uint16_t fl
 			Host_IO_Request* req = Generate_next_request();
 			if (req != NULL) {
 				Submit_io_request(req);
+
+				// 注册下次生成事件
 				Simulator->Register_sim_event(Simulator->Time() + (sim_time_type)random_time_interval_generator->Exponential((double)Average_inter_arrival_time_nano_sec), this, 0, 0);
 			}
 		} else {
+			// ???
 			for (unsigned int i = 0; i < average_number_of_enqueued_requests; i++) {
 				Submit_io_request(Generate_next_request());
 			}

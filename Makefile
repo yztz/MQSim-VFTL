@@ -1,6 +1,6 @@
 CC        := g++
 LD        := g++
-CC_FLAGS := -std=c++11 -O3 -g
+CC_FLAGS := -std=c++11 -Og -g -MMD -MP
 
 MODULES   := exec host nvm_chip nvm_chip/flash_memory sim ssd utils
 SRC_DIR   := $(addprefix src/,$(MODULES)) src
@@ -10,6 +10,7 @@ SRC       := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
 SRC       := src/main.cpp $(SRC)
 OBJ       := $(patsubst src/%.cpp,build/%.o,$(SRC))
 INCLUDES  := $(addprefix -I,$(SRC_DIR))
+DEP       := $(OBJ:.o=.d)  # 依赖文件路径
 
 vpath %.cpp $(SRC_DIR)
 
@@ -33,5 +34,7 @@ $(BUILD_DIR):
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f MQSim
+
+-include $(DEP)
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call make-goal,$(bdir))))

@@ -2,8 +2,8 @@
 #define HOST_DEFS_H
 
 
-#define QUEUE_ID_TO_FLOW_ID(Q) Q - 1
-#define FLOW_ID_TO_Q_ID(F) F + 1
+#define QUEUE_ID_TO_FLOW_ID(Q) (Q - 1)
+#define FLOW_ID_TO_Q_ID(F) (F + 1)
 #define NVME_COMP_Q_MEMORY_REGION 40
 #define DATA_MEMORY_REGION 0xFF0000000000
 

@@ -402,6 +402,7 @@ IO_Flow_Base::IO_Flow_Base(const sim_object_id_type &name, uint16_t flow_id, LHA
 		return sqe;
 	}
 
+	/// 提交生成的请求
 	void IO_Flow_Base::Submit_io_request(Host_IO_Request* request)
 	{
 		switch (SSD_device_type) {

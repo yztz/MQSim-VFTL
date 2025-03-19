@@ -49,6 +49,7 @@ namespace SSD_Components
 		void Start_simulation();
 		void Validate_simulation_config();
 		void Execute_simulator_event(MQSimEngine::Sim_Event*);
+		virtual ~GC_and_WL_Unit_Base(){};
 
 		virtual bool GC_is_in_urgent_mode(const NVM::FlashMemory::Flash_Chip*) = 0;
 		virtual void Check_gc_required(const unsigned int BlockPoolSize, const NVM::FlashMemory::Physical_Page_Address& planeAddress) = 0;

@@ -2,3 +2,4 @@ MQSim
 build/
 .vscode
 traces
+workload_scenario_*.xml

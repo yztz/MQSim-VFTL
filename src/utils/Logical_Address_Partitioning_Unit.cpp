@@ -76,6 +76,7 @@ namespace Utils
 			}
 		}
 
+		// 所需资源统计
 		for (unsigned int stream_id = 0; stream_id < concurrent_stream_no; stream_id++)
 		{
 			for (flash_channel_ID_type channel_id = 0; channel_id < stream_channel_ids[stream_id].size(); channel_id++) {
@@ -133,6 +134,7 @@ namespace Utils
 
 		std::vector<LHA_type> lsa_count_per_stream;
 		for (unsigned int stream_id = 0; stream_id < concurrent_stream_no; stream_id++) {
+			// 当前流在每个 plane 中的可用空间大小（单位是LHA，即扇区）加和
 			LHA_type lsa_count = 0;
 			for (flash_channel_ID_type channel_id = 0; channel_id < stream_channel_ids[stream_id].size(); channel_id++) {
 				for (flash_chip_ID_type chip_id = 0; chip_id < stream_chip_ids[stream_id].size(); chip_id++) {
@@ -152,7 +154,8 @@ namespace Utils
 		total_lha_no = 0;
 		for (unsigned int stream_id = 0; stream_id < concurrent_stream_no; stream_id++) {
 			start_lhas_per_flow.push_back(total_lha_no);
-			end_lhas_per_flow.push_back(total_lha_no + lsa_count_per_stream[stream_id]);
+			// 左闭右闭？
+			end_lhas_per_flow.push_back(total_lha_no + lsa_count_per_stream[stream_id] - 1);
 			total_lha_no += lsa_count_per_stream[stream_id];
 		}
 

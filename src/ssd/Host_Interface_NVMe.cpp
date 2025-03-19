@@ -39,6 +39,7 @@ stream_id_type Input_Stream_Manager_NVMe::Create_new_stream(IO_Flow_Priority_Cla
 
 inline void Input_Stream_Manager_NVMe::Submission_queue_tail_pointer_update(stream_id_type stream_id, uint16_t tail_pointer_value)
 {
+	// input_streams are initialized in Host_System::Start_simulation (Called Host_interface::Create_new_stream)
 	((Input_Stream_NVMe *)input_streams[stream_id])->Submission_tail = tail_pointer_value;
 
 	if (((Input_Stream_NVMe *)input_streams[stream_id])->On_the_fly_requests < Queue_fetch_size)
@@ -185,12 +186,12 @@ void Input_Stream_Manager_NVMe::segment_user_request(User_Request *user_request)
 		}
 		LHA_type internal_lsa = lsa - ((Input_Stream_NVMe *)input_streams[user_request->Stream_id])->Start_logical_sector_address; //For each flow, all lsa's should be translated into a range starting from zero
 
-		transaction_size = host_interface->sectors_per_page - (unsigned int)(lsa % host_interface->sectors_per_page);
+		transaction_size = host_interface->sectors_per_page - (unsigned int)(lsa % host_interface->sectors_per_page); // unit: sector
 		if (handled_sectors_count + transaction_size >= req_size)
 		{
 			transaction_size = req_size - handled_sectors_count;
 		}
-		LPA_type lpa = internal_lsa / host_interface->sectors_per_page;
+		LPA_type lpa = internal_lsa / host_interface->sectors_per_page; // unit: page
 
 		page_status_type temp = ~(0xffffffffffffffff << (int)transaction_size);
 		access_status_bitmap = temp << (int)(internal_lsa % host_interface->sectors_per_page);

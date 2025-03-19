@@ -60,23 +60,34 @@ namespace MQSimEngine
 		for(std::unordered_map<sim_object_id_type, Sim_Object*>::iterator obj = _ObjectList.begin();
 			obj != _ObjectList.end();
 			++obj) {
+			PRINT_MESSAGE("Simulator Object: " + obj->first);
+		}
+
+		// 1. trigger
+		for(std::unordered_map<sim_object_id_type, Sim_Object*>::iterator obj = _ObjectList.begin();
+			obj != _ObjectList.end();
+			++obj) {
+			PRINT_MESSAGE("Simulator Object");
 			if (!obj->second->IsTriggersSetUp()) {
 				obj->second->Setup_triggers();
 			}
 		}
 
+		// 2. validate
 		for (std::unordered_map<sim_object_id_type, Sim_Object*>::iterator obj = _ObjectList.begin();
 			obj != _ObjectList.end();
 			++obj) {
 			obj->second->Validate_simulation_config();
 		}
-		
+
+		// 3. start simulation
 		for (std::unordered_map<sim_object_id_type, Sim_Object*>::iterator obj = _ObjectList.begin();
 			obj != _ObjectList.end();
 			++obj) {
 			obj->second->Start_simulation();
 		}
-		
+
+		// 4. event loop
 		Sim_Event* ev = NULL;
 		while (true) {
 			if (_EventList->Count == 0 || stop) {
@@ -90,6 +101,7 @@ namespace MQSimEngine
 
 			while (ev != NULL) {
 				if(!ev->Ignore) {
+					// 5. execute event
 					ev->Target_sim_object->Execute_simulator_event(ev);
 				}
 				Sim_Event* consumed_event = ev;

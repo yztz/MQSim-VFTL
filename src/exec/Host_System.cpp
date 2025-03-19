@@ -51,7 +51,7 @@ Host_System::Host_System(Host_Parameter_Set* parameters, bool preconditioning_re
 				io_flow = new Host_Components::IO_Flow_Synthetic(this->ID() + ".IO_Flow.Synth.No_" + std::to_string(flow_id), flow_id,
 					Utils::Logical_Address_Partitioning_Unit::Start_lha_available_to_flow(flow_id),
 					Utils::Logical_Address_Partitioning_Unit::End_lha_available_to_flow(flow_id),
-					((double)flow_param->Working_Set_Percentage / 100.0), FLOW_ID_TO_Q_ID(flow_id), nvme_sq_size, nvme_cq_size,
+						((double)flow_param->Working_Set_Percentage / 100.0), FLOW_ID_TO_Q_ID(flow_id), nvme_sq_size, nvme_cq_size,
 					flow_param->Priority_Class, flow_param->Read_Percentage / double(100.0), flow_param->Address_Distribution, flow_param->Percentage_of_Hot_Region / double(100.0),
 					flow_param->Request_Size_Distribution, flow_param->Average_Request_Size, flow_param->Variance_Request_Size,
 					flow_param->Synthetic_Generator_Type, (flow_param->Bandwidth == 0? 0 :NanoSecondCoeff / ((flow_param->Bandwidth / SECTOR_SIZE_IN_BYTE) / flow_param->Average_Request_Size)),

@@ -44,6 +44,7 @@ namespace SSD_Components
 		auto it = addressMap.find(key);
 		assert(it != addressMap.end());
 		assert(it->second->Status == CMTEntryStatus::VALID);
+		// move to the first position
 		lruList.splice(lruList.begin(), lruList, it->second->listPtr);
 		
 		return it->second->PPA;
@@ -301,6 +302,7 @@ namespace SSD_Components
 		_my_instance = this;
 		domains = new AddressMappingDomain*[no_of_input_streams];
 
+		// Plane 级并行 ref: https://farseerfc.me/zhs/flash-storage-ftl-layer.html
 		Write_transactions_for_overfull_planes = new std::set<NVM_Transaction_Flash_WR*>***[channel_count];
 		for (unsigned int channel_id = 0; channel_id < channel_count; channel_id++) {
 			Write_transactions_for_overfull_planes[channel_id] = new std::set<NVM_Transaction_Flash_WR*>**[chip_no_per_channel];
@@ -321,8 +323,10 @@ namespace SSD_Components
 			*  is calculated at this level and then pass it to the constructors of mapping domains
 			* entry size = sizeOf(lpa) + sizeOf(ppn) + sizeOf(bit vector that shows written sectors of a page)
 			*/
+			// | LPA | PPA | other bits(sector_no_per_page) |
 			CMT_entry_size = (unsigned int)std::ceil(((2 * std::log2(total_physical_pages_no)) + sector_no_per_page) / 8);
 			//In GTD we do not need to store lpa
+			// Global Translation Directory
 			GTD_entry_size = (unsigned int)std::ceil((std::log2(total_physical_pages_no) + sector_no_per_page) / 8);
 			no_of_translation_entries_per_page = (SectorsPerPage * SECTOR_SIZE_IN_BYTE) / GTD_entry_size;
 
@@ -335,7 +339,7 @@ namespace SSD_Components
 					sharedCMT = new Cached_Mapping_Table(cmt_capacity);
 					break;
 				case CMT_Sharing_Mode::EQUAL_SIZE_PARTITIONING:
-					per_stream_cmt_capacity = cmt_capacity / no_of_input_streams;
+					per_stream_cmt_capacity = cmt_capacity / no_of_input_streams; // equal size
 					break;
 			}
 
@@ -502,9 +506,11 @@ namespace SSD_Components
 			ftl->TSU->Prepare_for_transaction_submit();
 			for (std::list<NVM_Transaction*>::const_iterator it = transactionList.begin();
 				it != transactionList.end(); it++) {
+				// 翻译完成的事务
 				if (((NVM_Transaction_Flash*)(*it))->Physical_address_determined) {
 					ftl->TSU->Submit_transaction(static_cast<NVM_Transaction_Flash*>(*it));
 					if (((NVM_Transaction_Flash*)(*it))->Type == Transaction_Type::WRITE) {
+						// 涉及交叉块更新
 						if (((NVM_Transaction_Flash_WR*)(*it))->RelatedRead != NULL) {
 							ftl->TSU->Submit_transaction(((NVM_Transaction_Flash_WR*)(*it))->RelatedRead);
 						}
@@ -522,6 +528,7 @@ namespace SSD_Components
 		Stats::total_CMT_queries++;
 		Stats::total_CMT_queries_per_stream[stream_id]++;
 
+		// CMT 中是否存在缓存项
 		if (domains[stream_id]->Mapping_entry_accessible(ideal_mapping_table, stream_id, transaction->LPA))//Either limited or unlimited CMT
 		{
 			Stats::CMT_hits_per_stream[stream_id]++;
@@ -595,6 +602,7 @@ namespace SSD_Components
 		PPA_type ppa = domains[streamID]->Get_ppa(ideal_mapping_table, streamID, transaction->LPA);
 
 		if (transaction->Type == Transaction_Type::READ) {
+			// 之前trace未读取，则模拟创建
 			if (ppa == NO_PPA) {
 				ppa = online_create_entry_for_reads(transaction->LPA, streamID, transaction->Address, ((NVM_Transaction_Flash_RD*)transaction)->read_sectors_bitmap);
 				block_manager->Program_transaction_serviced(transaction->Address);
@@ -1176,18 +1184,21 @@ namespace SSD_Components
 				page_status_type prev_page_status = domain->Get_page_status(ideal_mapping_table, transaction->Stream_id, transaction->LPA);
 				page_status_type status_intersection = transaction->write_sectors_bitmap & prev_page_status;
 				//check if an update read is required
-				if (status_intersection == prev_page_status) {
+				if (status_intersection == prev_page_status) { // 交叉覆盖了全部的旧数据
 					NVM::FlashMemory::Physical_Page_Address addr;
 					Convert_ppa_to_address(old_ppa, addr);
+					// 使页面失效
 					block_manager->Invalidate_page_in_block(transaction->Stream_id, addr);
-				} else {
+				} else { // 交叉覆盖了部分或者没有交叉
 					page_status_type read_pages_bitmap = status_intersection ^ prev_page_status;
+					// 新建了一个用于更新的读请求，读出交叉部分数据
 					NVM_Transaction_Flash_RD *update_read_tr = new NVM_Transaction_Flash_RD(transaction->Source, transaction->Stream_id,
 						count_sector_no_from_status_bitmap(read_pages_bitmap) * SECTOR_SIZE_IN_BYTE, transaction->LPA, old_ppa, transaction->UserIORequest,
 						transaction->Content, transaction, read_pages_bitmap, domain->GlobalMappingTable[transaction->LPA].TimeStamp);
 					Convert_ppa_to_address(old_ppa, update_read_tr->Address);
 					block_manager->Read_transaction_issued(update_read_tr->Address);//Inform block manager about a new transaction as soon as the transaction's target address is determined
 					block_manager->Invalidate_page_in_block(transaction->Stream_id, update_read_tr->Address);
+					// 建立事务关联
 					transaction->RelatedRead = update_read_tr;
 				}
 			}
@@ -1501,8 +1512,7 @@ namespace SSD_Components
 		*     with the changed parts (i.e., an update read of MVP). This read will be followed
 		*     by a writeback of MVP content to a new flash page.
 		* 2. A read has been issued to retrieve the mapping data for some previous user requests*/
-		if (domain->ArrivingMappingEntries.find(mvpn) != domain->ArrivingMappingEntries.end())
-		{
+		if (domain->ArrivingMappingEntries.find(mvpn) != domain->ArrivingMappingEntries.end()) {
 			if (domain->CMT->Is_slot_reserved_for_lpn_and_waiting(stream_id, lpa)) {
 				return false;
 			} else { //An entry should be created in the cache
@@ -1544,6 +1554,7 @@ namespace SSD_Components
 					domain->GlobalMappingTable[evicted_lpa].WrittenStateBitmap = evictedItem.WrittenStateBitmap;
 					if (domain->GlobalMappingTable[evicted_lpa].TimeStamp > CurrentTimeStamp)
 						throw std::logic_error("Unexpected situation occured in handling GMT!");
+					// why not evicted_lpa?
 					domain->GlobalMappingTable[lpa].TimeStamp = CurrentTimeStamp;
 					generate_flash_writeback_request_for_mapping_data(stream_id, evicted_lpa);
 				}

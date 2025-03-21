@@ -69,6 +69,8 @@ namespace SSD_Components
 	{
 	}
 
+
+	// 并行化事务提取处理
 	bool TSU_Base::issue_command_to_chip(Flash_Transaction_Queue *sourceQueue1, Flash_Transaction_Queue *sourceQueue2, Transaction_Type transactionType, bool suspensionRequired)
 	{
 		flash_die_ID_type dieID = sourceQueue1->front()->Address.DieID;
@@ -76,7 +78,7 @@ namespace SSD_Components
 		unsigned int planeVector = 0;
 		static int issueCntr = 0;
 		
-		for (unsigned int i = 0; i < die_no_per_chip; i++)
+		for (unsigned int i = 0; i < die_no_per_chip; i++) // TODO: ???
 		{
 			transaction_dispatch_slots.clear();
 			planeVector = 0;
@@ -130,7 +132,7 @@ namespace SSD_Components
 			else
 			{
 				transaction_dispatch_slots.clear();
-				dieID = (dieID + 1) % die_no_per_chip;
+				dieID = (dieID + 1) % die_no_per_chip; // ????
 				return false;
 			}			
 		}

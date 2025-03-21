@@ -210,8 +210,10 @@ void TSU_OutOfOrder::Schedule()
 
 	for (flash_channel_ID_type channelID = 0; channelID < channel_count; channelID++)
 	{
+		// 遍历所有空闲通道
 		if (_NVMController->Get_channel_status(channelID) == BusChannelStatus::IDLE)
 		{
+			// 遍历通道内chip
 			for (unsigned int i = 0; i < chip_no_per_channel; i++)
 			{
 				NVM::FlashMemory::Flash_Chip *chip = _NVMController->Get_chip(channelID, Round_robin_turn_of_channel[channelID]);
@@ -315,6 +317,8 @@ bool TSU_OutOfOrder::service_read_transaction(NVM::FlashMemory::Flash_Chip *chip
 			return false;
 		}
 		suspensionRequired = true;
+
+		// break???
 	case ChipStatus::ERASING:
 		if (!eraseSuspensionEnabled || _NVMController->HasSuspendedCommand(chip))
 		{
@@ -325,6 +329,8 @@ bool TSU_OutOfOrder::service_read_transaction(NVM::FlashMemory::Flash_Chip *chip
 			return false;
 		}
 		suspensionRequired = true;
+
+		// TODO: break???
 	default:
 		return false;
 	}
@@ -415,6 +421,8 @@ bool TSU_OutOfOrder::service_write_transaction(NVM::FlashMemory::Flash_Chip *chi
 		if (_NVMController->Expected_finish_time(chip) - Simulator->Time() < eraseReasonableSuspensionTimeForWrite)
 			return false;
 		suspensionRequired = true;
+
+		// break???
 	default:
 		return false;
 	}

@@ -57,17 +57,11 @@ namespace MQSimEngine
 	{
 		started = true;
 
-		for(std::unordered_map<sim_object_id_type, Sim_Object*>::iterator obj = _ObjectList.begin();
-			obj != _ObjectList.end();
-			++obj) {
-			PRINT_MESSAGE("Simulator Object: " + obj->first);
-		}
-
 		// 1. trigger
 		for(std::unordered_map<sim_object_id_type, Sim_Object*>::iterator obj = _ObjectList.begin();
 			obj != _ObjectList.end();
 			++obj) {
-			PRINT_MESSAGE("Simulator Object");
+			PRINT_MESSAGE("Simulator Object: " + obj->first);
 			if (!obj->second->IsTriggersSetUp()) {
 				obj->second->Setup_triggers();
 			}
